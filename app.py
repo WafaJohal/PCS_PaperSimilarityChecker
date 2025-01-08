@@ -39,8 +39,8 @@ def compute_similarity_between_dataframes(df1, df2):
 # If 'Abstract' column is missing, use 'Title' column instead
 def compute_similarity_within_dataframe(df):
     # Set Paper ID as index if exists
-    if 'Paper ID' in df.columns:
-        df = df.set_index('Paper ID')
+    if 'Paper ID' in df.columns and df.index.name != 'Paper ID':
+        df = df.set_index('Paper ID', drop=False)
 
     # Determine which column to use
     column = 'Abstract' if 'Abstract' in df.columns else 'Title'
@@ -65,18 +65,20 @@ def display_similarity_with_gradient(similarity_matrix, threshold):
 
     # Apply a gradient with threshold filtering
     styled_df = similarity_percentage.style.background_gradient(cmap="coolwarm")
-    styled_df = styled_df.applymap(lambda v: "background-color: lightgray;" if v < threshold else "")
+    styled_df = styled_df.map(lambda v: "background-color: lightgray;" if v < threshold else "")
     styled_df = styled_df.format("{:.2f}%")
     st.write(styled_df)
 
 # Function to display top 10 most similar papers
 def display_top_similar_pairs(similarity_matrix, df1, df2):
     # Flatten the similarity matrix and get the indices
-    similarity_flat = similarity_matrix.unstack().reset_index()
+    similarity_flat = similarity_matrix.stack().reset_index()
     similarity_flat.columns = ['Paper1', 'Paper2', 'Similarity']
 
-    # Filter out self-similarities and sort by similarity score
-    similarity_flat = similarity_flat[similarity_flat['Paper1'] != similarity_flat['Paper2']]
+     # Filter out self-similarities (only for within-dataset analysis)
+    if df1.equals(df2):
+        similarity_flat = similarity_flat[similarity_flat['Paper1'] != similarity_flat['Paper2']]
+
     top_similarities = similarity_flat.sort_values(by='Similarity', ascending=False).head(10)
 
     # Display the results
@@ -84,9 +86,9 @@ def display_top_similar_pairs(similarity_matrix, df1, df2):
     for _, row in top_similarities.iterrows():
         paper1 = df1.loc[row['Paper1']]
         paper2 = df2.loc[row['Paper2']]
-        st.write(f"**Paper 1 (Index {row['Paper1']}):** {paper1.to_dict()}")
-        st.write(f"**Paper 2 (Index {row['Paper2']}):** {paper2.to_dict()}")
-        st.write(f"**Similarity Score:** {row['Similarity']:.4f}")
+        st.write(f"**Paper 1 ID:** {row['Paper1']} | **Title:** {paper1['Title']} | **Authors:** {paper1['Authors']}")
+        st.write(f"**Paper 2 ID:** {row['Paper2']} | **Title:** {paper2['Title']} | **Authors:** {paper2['Authors']}")
+        st.write(f"**Similarity Score:** {row['Similarity']:.2f}%")
         st.markdown("---")
 
 # Streamlit app
@@ -119,7 +121,7 @@ def main():
         st.write("### Similarity Matrix with Gradient")
         display_similarity_with_gradient(similarity_matrix, threshold)
 
-        display_top_similar_pairs(similarity_matrix, df1, df2)
+        #display_top_similar_pairs(similarity_matrix, df1, df2)
 
     elif uploaded_file1 is not None:
         df1 = pd.read_excel(uploaded_file1)
@@ -135,7 +137,7 @@ def main():
         st.write("### Similarity Matrix with Gradient")
         display_similarity_with_gradient(similarity_matrix, threshold)
 
-        display_top_similar_pairs(similarity_matrix, df1, df1)
+        #display_top_similar_pairs(similarity_matrix, df1, df1)
 
     else:
         st.write("Please upload at least one Excel file to proceed.")
