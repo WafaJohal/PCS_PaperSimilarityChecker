@@ -31,12 +31,15 @@ The tool is ideal for conference organizers and reviewers to detect:
    git clone https://github.com/yourusername/paper-similarity-checker.git
    
 2. Navigate to the project directory:
-    ``` cd paper-similarity-checker
+    ```bash
+    cd paper-similarity-checker
 
 3. Install dependencies:
-    ```pip install -r requirements.txt
+    ```bash
+    pip install -r requirements.txt
 
 4. Run the Streamlit app:
-    ``` streamlit run app.py
-    
+    ```bash
+    streamlit run app.py
+
 Upload your datasets and analyze the similarities.
